@@ -1,4 +1,4 @@
-# Corsair Xeneon Edge Pages
+#CheckPoint Zero
 
 ![App preview](app.png)
 
