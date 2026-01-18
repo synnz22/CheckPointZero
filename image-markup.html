@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Image Markup Pad</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-0: #0f1116;
+      --bg-1: #1a1e29;
+      --ink-0: #edf0f7;
+      --ink-1: #b8bfd3;
+      --ink-2: #8a93a8;
+      --accent-0: #4ef2c3;
+      --accent-1: #57a6ff;
+      --stroke: rgba(255,255,255,0.12);
+      --glass: rgba(20, 22, 32, 0.72);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      padding: 12px;
+      font-family: "Agency FB", "Segoe UI", Tahoma, sans-serif;
+      color: var(--ink-0);
+      background:
+        radial-gradient(520px 280px at 12% 10%, rgba(78, 242, 195, 0.18), transparent 60%),
+        radial-gradient(520px 280px at 88% 12%, rgba(87, 166, 255, 0.20), transparent 60%),
+        linear-gradient(135deg, var(--bg-0), var(--bg-1));
+    }
+
+    .back-link{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      color:#cfd2dd;
+      font-size:12px;
+      text-decoration:none;
+      border:1px solid var(--stroke);
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(0,0,0,0.18);
+      margin-bottom:10px;
+    }
+    .back-link:hover{ background: rgba(255,255,255,0.08); }
+
+    .card {
+      border: 1px solid var(--stroke);
+      border-radius: 14px;
+      background: var(--glass);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+      overflow: hidden;
+    }
+    .hdr {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+    .content { padding: 12px; display: grid; gap: 10px; }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    button, input[type="color"], input[type="range"] {
+      border-radius: 10px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,0.06);
+      color: var(--ink-0);
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+    button:hover { background: rgba(255,255,255,0.10); }
+    .chip {
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--ink-2);
+    }
+
+    .drop {
+      border: 1px dashed rgba(255,255,255,0.22);
+      border-radius: 12px;
+      background: rgba(0,0,0,0.18);
+      padding: 16px;
+      min-height: 120px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      user-select: none;
+      color: var(--ink-1);
+    }
+
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.25);
+      transform-origin: top left;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    #drawCanvas {
+      position: absolute;
+      inset: 0;
+      touch-action: none;
+    }
+
+    .hint { font-size: 12px; color: var(--ink-2); }
+    input[type="file"] { display: none; }
+    select {
+      border-radius: 10px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,0.06);
+      color: var(--ink-0);
+      padding: 8px 10px;
+      cursor: pointer;
+      min-width: 160px;
+    }
+    .stage {
+      border-radius: 12px;
+      overflow: auto;
+      max-height: 65vh;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <a class="back-link" href="start.html">Back to start</a>
+
+  <div class="card">
+    <div class="hdr">
+      <div>Image Markup Pad</div>
+      <div class="chip">draw + erase</div>
+    </div>
+    <div class="content">
+      <div class="toolbar">
+        <button id="chooseBtn" type="button">Choose Image</button>
+        <select id="recentSelect">
+          <option value="">Recent Images</option>
+        </select>
+        <button id="clearMarksBtn" type="button">Clear Marks</button>
+        <button id="clearImageBtn" type="button">Clear Image</button>
+        <label class="chip">Brush</label>
+        <input id="sizeInput" type="range" min="2" max="28" value="6" />
+        <input id="colorInput" type="color" value="#4ef2c3" />
+        <label class="chip">Zoom</label>
+        <input id="zoomInput" type="range" min="50" max="200" value="100" />
+        <button id="eraserBtn" type="button">Eraser Off</button>
+        <input id="fileInput" type="file" accept="image/*" />
+      </div>
+
+      <div id="drop" class="drop">
+        Drop an image here or use "Choose Image"
+      </div>
+
+      <div id="stage" class="stage" style="display:none;">
+        <div id="canvasWrap" class="canvas-wrap">
+          <canvas id="imageCanvas"></canvas>
+          <canvas id="drawCanvas"></canvas>
+        </div>
+      </div>
+
+      <div class="hint">
+        Marks are temporary. Clear Marks wipes the overlay only.
+      </div>
+      <div id="status" class="hint"></div>
+    </div>
+  </div>
+
+  <script>
+    const STORE_KEY = "image_markup_v1";
+    const RECENTS_KEY = "image_markup_recent_v1";
+    const DB_NAME = "image_markup_db_v1";
+    const STORE_NAME = "images";
+    const drop = document.getElementById("drop");
+    const chooseBtn = document.getElementById("chooseBtn");
+    const clearMarksBtn = document.getElementById("clearMarksBtn");
+    const clearImageBtn = document.getElementById("clearImageBtn");
+    const fileInput = document.getElementById("fileInput");
+    const sizeInput = document.getElementById("sizeInput");
+    const colorInput = document.getElementById("colorInput");
+    const zoomInput = document.getElementById("zoomInput");
+    const eraserBtn = document.getElementById("eraserBtn");
+    const recentSelect = document.getElementById("recentSelect");
+    const stage = document.getElementById("stage");
+    const canvasWrap = document.getElementById("canvasWrap");
+    const imageCanvas = document.getElementById("imageCanvas");
+    const drawCanvas = document.getElementById("drawCanvas");
+    const imageCtx = imageCanvas.getContext("2d");
+    const drawCtx = drawCanvas.getContext("2d");
+    const statusEl = document.getElementById("status");
+
+    let isDrawing = false;
+    let last = { x: 0, y: 0 };
+    let eraser = false;
+    const MAX_DIM = 4096;
+
+    function setStatus(msg){
+      statusEl.textContent = msg || "";
+    }
+
+    function saveCurrent(value){ try { localStorage.setItem(STORE_KEY, value); } catch {} }
+    function loadCurrent(){ try { return localStorage.getItem(STORE_KEY); } catch { return null; } }
+    function loadRecents(){
+      try { return JSON.parse(localStorage.getItem(RECENTS_KEY) || "[]"); } catch { return []; }
+    }
+    function saveRecents(list){
+      try { localStorage.setItem(RECENTS_KEY, JSON.stringify(list)); } catch {}
+    }
+    let recentItems = loadRecents();
+
+    function openDb(){
+      return new Promise((resolve, reject) => {
+        if (!("indexedDB" in window)) return reject(new Error("indexedDB unavailable"));
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: "id" });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    const dbPromise = openDb().catch(() => null);
+
+    async function idbPut(id, blob){
+      const db = await dbPromise;
+      if (!db) return false;
+      try {
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, "readwrite");
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+          tx.objectStore(STORE_NAME).put({ id, blob });
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    async function idbGet(id){
+      const db = await dbPromise;
+      if (!db) return null;
+      return await new Promise((resolve) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const req = tx.objectStore(STORE_NAME).get(id);
+        req.onsuccess = () => resolve(req.result ? req.result.blob : null);
+        req.onerror = () => resolve(null);
+      });
+    }
+
+    function updateRecents(name, id, dataUrlFallback){
+      const filtered = recentItems.filter((item) => item.id !== id && item.dataUrl !== dataUrlFallback);
+      const entry = { name, id, ts: Date.now() };
+      if (dataUrlFallback) entry.dataUrl = dataUrlFallback;
+      filtered.unshift(entry);
+      recentItems = filtered.slice(0, 8);
+      saveRecents(recentItems);
+      renderRecents(recentItems);
+    }
+    function renderRecents(list){
+      recentSelect.innerHTML = "";
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Recent Images";
+      recentSelect.appendChild(placeholder);
+      list.forEach((item, index) => {
+        const opt = document.createElement("option");
+        opt.value = String(index);
+        opt.textContent = item.name || `Image ${index + 1}`;
+        recentSelect.appendChild(opt);
+      });
+    }
+
+    function setCanvasSize(w, h){
+      imageCanvas.width = w;
+      imageCanvas.height = h;
+      drawCanvas.width = w;
+      drawCanvas.height = h;
+    }
+
+    function showCanvas(){
+      stage.style.display = "block";
+      drop.style.display = "none";
+    }
+
+    function hideCanvas(){
+      stage.style.display = "none";
+      drop.style.display = "grid";
+      imageCtx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+      drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    }
+
+    function applyZoom(){
+      const zoom = Number(zoomInput.value) / 100;
+      canvasWrap.style.transform = `scale(${zoom})`;
+    }
+
+    function drawSourceToCanvas(source, sourceWidth, sourceHeight){
+      applyZoom();
+      let w = sourceWidth;
+      let h = sourceHeight;
+      const scale = Math.min(1, MAX_DIM / Math.max(w, h));
+      if (scale < 1) {
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+        setStatus(`Scaled image to ${w}x${h}`);
+      } else {
+        setStatus("");
+      }
+      setCanvasSize(w, h);
+      imageCtx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+      imageCtx.drawImage(source, 0, 0, w, h);
+      drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+      showCanvas();
+    }
+
+    async function drawBlobToCanvas(blob){
+      if (!blob) return false;
+      if ("createImageBitmap" in window) {
+        try {
+          const bitmap = await createImageBitmap(blob);
+          drawSourceToCanvas(bitmap, bitmap.width, bitmap.height);
+          if (bitmap.close) bitmap.close();
+          return true;
+        } catch {
+          setStatus("Failed to decode with ImageBitmap.");
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      drawImageToCanvas(url, true);
+      return true;
+    }
+
+    function drawImageToCanvas(src, revokeUrl){
+      const img = new Image();
+      img.onload = () => {
+        drawSourceToCanvas(img, img.naturalWidth, img.naturalHeight);
+        if (revokeUrl) URL.revokeObjectURL(src);
+      };
+      img.onerror = () => {
+        if (revokeUrl) URL.revokeObjectURL(src);
+        setStatus("Failed to load image data.");
+      };
+      img.src = src;
+    }
+
+    function isImageFile(file){
+      if (!file) return false;
+      if (file.type && file.type.startsWith("image/")) return true;
+      const name = (file.name || "").toLowerCase();
+      return name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".webp");
+    }
+
+    function readFile(file){
+      if (!isImageFile(file)) return;
+      setStatus(`Loading ${file.name || "image"}...`);
+      const id = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      file.arrayBuffer().then(async (buf) => {
+        const blob = new Blob([buf], { type: file.type || "image/png" });
+        const stored = await idbPut(id, blob);
+        if (stored) {
+          saveCurrent(`id:${id}`);
+          updateRecents(file.name || "Image", id, null);
+          await drawBlobToCanvas(blob);
+          return;
+        }
+        updateRecents(file.name || "Image", id, null);
+        saveCurrent("");
+        await drawBlobToCanvas(blob);
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result;
+          saveCurrent(dataUrl);
+          updateRecents(file.name || "Image", id, dataUrl);
+        };
+        reader.readAsDataURL(file);
+      }).catch(() => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result;
+          saveCurrent(dataUrl);
+          updateRecents(file.name || "Image", id, dataUrl);
+          drawImageToCanvas(dataUrl, false);
+        };
+        reader.onerror = () => setStatus("Failed to read file.");
+        reader.onabort = () => setStatus("File read canceled.");
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function getDroppedFile(e){
+      const items = e.dataTransfer && e.dataTransfer.items ? e.dataTransfer.items : null;
+      if (items && items.length) {
+        for (let i = 0; i < items.length; i += 1) {
+          if (items[i].kind === "file") {
+            const f = items[i].getAsFile();
+            if (f) return f;
+          }
+        }
+      }
+      return e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files[0] : null;
+    }
+
+    function getPos(e){
+      const rect = drawCanvas.getBoundingClientRect();
+      const scaleX = drawCanvas.width / rect.width;
+      const scaleY = drawCanvas.height / rect.height;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+      };
+    }
+
+    function strokeLine(from, to){
+      drawCtx.save();
+      drawCtx.lineCap = "round";
+      drawCtx.lineJoin = "round";
+      drawCtx.lineWidth = Number(sizeInput.value);
+      drawCtx.strokeStyle = colorInput.value;
+      drawCtx.globalCompositeOperation = eraser ? "destination-out" : "source-over";
+      drawCtx.beginPath();
+      drawCtx.moveTo(from.x, from.y);
+      drawCtx.lineTo(to.x, to.y);
+      drawCtx.stroke();
+      drawCtx.restore();
+    }
+
+    drawCanvas.addEventListener("pointerdown", (e) => {
+      if (canvasWrap.style.display === "none") return;
+      isDrawing = true;
+      drawCanvas.setPointerCapture(e.pointerId);
+      last = getPos(e);
+    });
+
+    drawCanvas.addEventListener("pointermove", (e) => {
+      if (!isDrawing) return;
+      const pos = getPos(e);
+      strokeLine(last, pos);
+      last = pos;
+    });
+
+    function endDraw(e){
+      if (!isDrawing) return;
+      isDrawing = false;
+      drawCanvas.releasePointerCapture(e.pointerId);
+    }
+    drawCanvas.addEventListener("pointerup", endDraw);
+    drawCanvas.addEventListener("pointercancel", endDraw);
+    drawCanvas.addEventListener("pointerleave", endDraw);
+
+    chooseBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", () => readFile(fileInput.files[0]));
+    async function handleRecentPick(){
+      const idx = recentSelect.selectedIndex - 1;
+      const item = recentItems[idx];
+      if (!item) return;
+      const storedBlob = item.id ? await idbGet(item.id) : null;
+      if (storedBlob) {
+        saveCurrent(`id:${item.id}`);
+        await drawBlobToCanvas(storedBlob);
+      } else if (item.dataUrl) {
+        saveCurrent(item.dataUrl);
+        drawImageToCanvas(item.dataUrl, false);
+      } else {
+        setStatus("Recent image data not found.");
+        return;
+      }
+      recentSelect.value = "";
+    }
+    recentSelect.addEventListener("change", handleRecentPick);
+    recentSelect.addEventListener("input", handleRecentPick);
+
+    clearMarksBtn.addEventListener("click", () => {
+      drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    });
+
+    clearImageBtn.addEventListener("click", () => {
+      try { localStorage.removeItem(STORE_KEY); } catch {}
+      hideCanvas();
+      zoomInput.value = "100";
+      applyZoom();
+      fileInput.value = "";
+    });
+
+    eraserBtn.addEventListener("click", () => {
+      eraser = !eraser;
+      eraserBtn.textContent = eraser ? "Eraser On" : "Eraser Off";
+    });
+
+    zoomInput.addEventListener("input", applyZoom);
+
+    drop.addEventListener("dragover", (e) => { e.preventDefault(); });
+    drop.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const file = getDroppedFile(e);
+      readFile(file);
+    });
+
+    async function init(){
+      const saved = loadCurrent();
+      if (saved && saved.startsWith("id:")) {
+        const id = saved.slice(3);
+        const blob = await idbGet(id);
+        if (blob) {
+          await drawBlobToCanvas(blob);
+          if (!recentItems.some((item) => item.id === id)) {
+            updateRecents("Last Image", id, null);
+          }
+        }
+      } else if (saved && saved.startsWith("data:")) {
+        if (!recentItems.some((item) => item.dataUrl === saved)) {
+          updateRecents("Last Image", `last_${Date.now()}`, saved);
+        }
+        drawImageToCanvas(saved, false);
+      } else {
+        renderRecents(recentItems);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
